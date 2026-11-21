@@ -2,9 +2,9 @@
   "Author": "KanoNoUta",
   "Name": "BossModReborn 斗兽版本",
   "InternalName": "BossModReborn",
-  "RepoUrl": "https://github.com/KanoNoUta/BossmodRebornCN",
+  "RepoUrl": "https://github.com/WayneXXDD/BossmodRebornCN",
   "Description": "支持斗兽自走棋部分线路",
-  "Changelog": "7.5.6.17：完善博兹雅南方战线 CE 与遭遇战的机制绘制和 AI 避让，新增 2 个 CE 与 2 个遭遇战模块（感谢 duyaxxx）。",
+  "Changelog": "7.5.6.18 將 DTR 的 AI 開關狀態顯示為 AI: On 或 AI: Off。",
   "ApplicableVersion": "any",
   "Tags": [
     "combat",
@@ -29,5 +29,5 @@
     "https://raw.githubusercontent.com/FFXIV-CombatReborn/BossmodReborn/master/Data/image2.png",
     "https://raw.githubusercontent.com/FFXIV-CombatReborn/BossmodReborn/master/Data/image3.png"
   ],
-  "AssemblyVersion": "7.5.6.17"
+  "AssemblyVersion": "7.5.6.18"
 }

@@ -1,6 +1,9 @@
 name: Publish
 on:
+  workflow_dispatch:
   push:
+    branches: [main]
+    paths: ['BossMod/BossModReborn.json']
     tags:
       - '*.*.*.*'
 jobs:
@@ -14,12 +17,14 @@ jobs:
         with:
           submodules: true
 
-      - name: Get Environment Variables
+      - name: Read release version
+        shell: pwsh
         run: |
-          $tag = "${{ github.ref }}" -replace 'refs/tags/', ''
+          $version = (Get-Content -Raw 'BossMod/BossModReborn.json' | ConvertFrom-Json).AssemblyVersion
+          if ($version -notmatch '^\d+\.\d+\.\d+\.\d+$') { throw 'Invalid plugin version.' }
+          if ($env:GITHUB_REF_TYPE -eq 'tag' -and $env:GITHUB_REF_NAME -ne $version) { throw 'Tag and plugin version differ.' }
+          "tag=$version" >> $env:GITHUB_ENV
 
-          "tag=$tag" | Out-File -Append -FilePath $Env:GITHUB_ENV
-          
       - name: Set up .NET
         uses: actions/setup-dotnet@v5
         with:
@@ -36,14 +41,32 @@ jobs:
       - name: Build Plugin
         run: dotnet build --no-restore -c Release BossMod\BossModReborn.csproj -p:AssemblyVersion=${{ env.tag }} -p:FileVersion=${{ env.tag }} -p:PackageVersion=${{ env.tag }} -p:InformationalVersion=${{ env.tag }} --output .\build
 
-      - name: Cleanup Build Output
-        run: Get-ChildItem .\build\* -Exclude BossModReborn.*,DefaultRotationPresets.json,RebornPresets.json,PInvoke.User32.dll | Remove-Item -Force -Recurse
-
-      - name: Zip Plugin
-        run: Compress-Archive -Path .\build\* -DestinationPath .\build\latest.zip
+      - name: Verify and package the plugin
+        shell: pwsh
+        run: |
+          $name = 'BossModReborn'
+          $dir = Join-Path $PWD 'build'
+          $manifest = Get-Content -Raw (Join-Path $dir "$name.json") | ConvertFrom-Json
+          $dll = [Reflection.AssemblyName]::GetAssemblyName((Join-Path $dir "$name.dll"))
+          if ($dll.Name -cne $name -or $manifest.InternalName -cne $name -or $dll.Version.ToString() -ne $env:tag -or $manifest.AssemblyVersion -ne $env:tag -or [int]$manifest.DalamudApiLevel -ne 15) {
+            throw 'Packaged plugin identity, version or API does not match the manifest.'
+          }
+          $files = @("$dir/$name.dll", "$dir/$name.json", "$dir/DefaultRotationPresets.json", "$dir/RebornPresets.json")
+          foreach ($optional in @("$name.pdb", "PInvoke.User32.dll")) {
+            $item = Join-Path $dir $optional
+            if (Test-Path -LiteralPath $item) { $files += $item }
+          }
+          Compress-Archive -LiteralPath $files -DestinationPath latest.zip
+          Write-Host "Verified $name $env:tag for API 15. SHA256: $((Get-FileHash latest.zip -Algorithm SHA256).Hash)"
 
       - name: Publish Plugin
         uses: softprops/action-gh-release@v3
         with:
-          files: ./build/latest.zip
+          tag_name: ${{ env.tag }}
+          target_commitish: ${{ github.sha }}
+          files: |
+            latest.zip
+            build/BossModReborn.json
+          fail_on_unmatched_files: true
+          overwrite_files: false
           token: ${{ secrets.GITHUB_TOKEN }}

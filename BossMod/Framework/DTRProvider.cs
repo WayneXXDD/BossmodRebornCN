@@ -60,7 +60,7 @@ internal sealed class DTRProvider : IDisposable
         var beh = _ai.Beh;
         if (show2)
         {
-            _aiEntry.Text = "AI: " + (beh == null ? "关" : "开");
+            _aiEntry.Text = "AI: " + (beh == null ? "Off" : "On");
         }
 
         if (_wantOpenPopup && _mgr.Player != null)
