@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: ['BossMod/BossModReborn.json']
+    paths: ['BossMod/BossModReborn.json', '.github/workflows/publish.yml']
     tags:
       - '*.*.*.*'
 jobs:
@@ -56,8 +56,10 @@ jobs:
             $item = Join-Path $dir $optional
             if (Test-Path -LiteralPath $item) { $files += $item }
           }
-          Compress-Archive -LiteralPath $files -DestinationPath latest.zip
-          Write-Host "Verified $name $env:tag for API 15. SHA256: $((Get-FileHash latest.zip -Algorithm SHA256).Hash)"
+          $releaseDir = New-Item -ItemType Directory -Path 'release-package' -Force
+          $zip = Join-Path $releaseDir.FullName 'latest.zip'
+          Compress-Archive -LiteralPath $files -DestinationPath $zip
+          Write-Host "Verified $name $env:tag for API 15. SHA256: $((Get-FileHash -LiteralPath $zip -Algorithm SHA256).Hash)"
 
       - name: Publish Plugin
         uses: softprops/action-gh-release@v3
@@ -65,8 +67,8 @@ jobs:
           tag_name: ${{ env.tag }}
           target_commitish: ${{ github.sha }}
           files: |
-            latest.zip
-            build/BossModReborn.json
+            release-package/latest.zip
+            BossMod/BossModReborn.json
           fail_on_unmatched_files: true
           overwrite_files: false
           token: ${{ secrets.GITHUB_TOKEN }}
